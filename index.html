@@ -228,27 +228,96 @@ function prevStep(){if(step>0){step--;renderLesson()}else lessonDialog.close()}
 function finishDay(){if(!completed.includes(day)){completed.push(day);completed.sort((a,b)=>a-b);localStorage.setItem(STORE.completed,JSON.stringify(completed))}renderDays();lessonDialog.close()}
 
 let japaneseVoice=null;
+let currentAudio=null;
+
 function loadJapaneseVoice(){
  if(!("speechSynthesis" in window))return;
  const voices=window.speechSynthesis.getVoices();
- japaneseVoice=voices.find(v=>v.lang==="ja-JP")||voices.find(v=>String(v.lang).toLowerCase().startsWith("ja"))||null;
+ japaneseVoice=
+   voices.find(v=>v.lang==="ja-JP")||
+   voices.find(v=>String(v.lang).toLowerCase().startsWith("ja"))||
+   null;
 }
+
 if("speechSynthesis" in window){
  loadJapaneseVoice();
  window.speechSynthesis.onvoiceschanged=loadJapaneseVoice;
 }
-function speak(text){
- if(!("speechSynthesis" in window)){alert("你的瀏覽器不支援語音播放。");return;}
- window.speechSynthesis.cancel();
- loadJapaneseVoice();
- const utterance=new SpeechSynthesisUtterance(String(text));
- utterance.lang="ja-JP";
- utterance.rate=0.82;
- utterance.pitch=1;
- utterance.volume=1;
- if(japaneseVoice)utterance.voice=japaneseVoice;
- utterance.onerror=function(){alert("語音播放失敗。請確認瀏覽器網站音效沒有被靜音，並確認裝置已安裝日文語音。");};
- window.speechSynthesis.speak(utterance);
+
+function browserSpeak(text){
+ return new Promise((resolve,reject)=>{
+   if(!("speechSynthesis" in window)){
+     reject(new Error("Speech synthesis is not supported"));
+     return;
+   }
+
+   window.speechSynthesis.cancel();
+   loadJapaneseVoice();
+
+   const utterance=new SpeechSynthesisUtterance(String(text));
+   utterance.lang="ja-JP";
+   utterance.rate=0.82;
+   utterance.pitch=1;
+   utterance.volume=1;
+
+   if(japaneseVoice)utterance.voice=japaneseVoice;
+
+   utterance.onend=resolve;
+   utterance.onerror=reject;
+   window.speechSynthesis.speak(utterance);
+ });
+}
+
+function playExternalAudio(url){
+ return new Promise((resolve,reject)=>{
+   if(currentAudio){
+     currentAudio.pause();
+     currentAudio.src="";
+   }
+
+   const audio=new Audio();
+   currentAudio=audio;
+   audio.preload="auto";
+   audio.src=url;
+   audio.onended=resolve;
+   audio.onerror=reject;
+
+   const playPromise=audio.play();
+   if(playPromise&&typeof playPromise.catch==="function"){
+     playPromise.catch(reject);
+   }
+ });
+}
+
+async function speak(text){
+ const message=String(text||"").trim();
+ if(!message)return;
+
+ if("speechSynthesis" in window){
+   window.speechSynthesis.cancel();
+ }
+
+ const encoded=encodeURIComponent(message);
+ const sources=[
+   `https://translate.googleapis.com/translate_tts?ie=UTF-8&client=gtx&tl=ja&q=${encoded}`,
+   `https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=ja&q=${encoded}`
+ ];
+
+ for(const source of sources){
+   try{
+     await playExternalAudio(source);
+     return;
+   }catch(error){
+     console.warn("外部語音播放失敗，嘗試下一個來源。",error);
+   }
+ }
+
+ try{
+   await browserSpeak(message);
+ }catch(error){
+   console.error("所有語音播放方式皆失敗。",error);
+   alert("目前無法播放語音。請確認網站分頁沒有被靜音，並允許瀏覽器播放音效。");
+ }
 }
 
 renderDaily();

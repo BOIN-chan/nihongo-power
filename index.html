@@ -227,22 +227,18 @@ function nextStep(){if(step<5){step++;renderLesson()}}
 function prevStep(){if(step>0){step--;renderLesson()}else lessonDialog.close()}
 function finishDay(){if(!completed.includes(day)){completed.push(day);completed.sort((a,b)=>a-b);localStorage.setItem(STORE.completed,JSON.stringify(completed))}renderDays();lessonDialog.close()}
 
-let currentAudio=null;
 let japaneseVoice=null;
-
 function loadJapaneseVoice(){
  if(!("speechSynthesis" in window))return;
  const voices=window.speechSynthesis.getVoices();
  japaneseVoice=voices.find(v=>v.lang==="ja-JP")||voices.find(v=>String(v.lang).toLowerCase().startsWith("ja"))||null;
 }
-
 if("speechSynthesis" in window){
  loadJapaneseVoice();
  window.speechSynthesis.onvoiceschanged=loadJapaneseVoice;
 }
-
-function browserSpeak(text){
- if(!("speechSynthesis" in window))return;
+function speak(text){
+ if(!("speechSynthesis" in window)){alert("你的瀏覽器不支援語音播放。");return;}
  window.speechSynthesis.cancel();
  loadJapaneseVoice();
  const utterance=new SpeechSynthesisUtterance(String(text));
@@ -251,26 +247,8 @@ function browserSpeak(text){
  utterance.pitch=1;
  utterance.volume=1;
  if(japaneseVoice)utterance.voice=japaneseVoice;
+ utterance.onerror=function(){alert("語音播放失敗。請確認瀏覽器網站音效沒有被靜音，並確認裝置已安裝日文語音。");};
  window.speechSynthesis.speak(utterance);
-}
-
-function speak(text){
- const value=String(text||"").trim();
- if(!value)return;
-
- if(currentAudio){
-  currentAudio.pause();
-  currentAudio=null;
- }
- if("speechSynthesis" in window)window.speechSynthesis.cancel();
-
- const url="https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=ja&q="+encodeURIComponent(value);
- const audio=new Audio(url);
- currentAudio=audio;
- audio.preload="auto";
- audio.volume=1;
- audio.play().catch(()=>browserSpeak(value));
- audio.onerror=()=>browserSpeak(value);
 }
 
 renderDaily();

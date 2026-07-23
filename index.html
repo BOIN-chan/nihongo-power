@@ -48,7 +48,65 @@ button{font:inherit}
       </div>
       <div class="day-badge">Day 1</div>
     </header>
+<section style="
+  display:flex;
+  align-items:center;
+  gap:14px;
+  background:#fff;
+  border:1px solid #eee5dc;
+  border-radius:22px;
+  padding:18px;
+  margin:18px 0;
+  box-shadow:0 10px 25px rgba(34,48,68,.08);
+">
+  <div style="
+    width:64px;
+    height:64px;
+    flex-shrink:0;
+    display:grid;
+    place-items:center;
+    border-radius:20px;
+    background:#fff3d8;
+    font-size:34px;
+  ">
+    🥁
+  </div>
 
+  <div style="flex:1;">
+    <p style="
+      margin:0 0 4px;
+      color:#c45b6d;
+      font-size:12px;
+      font-weight:800;
+      letter-spacing:1px;
+    ">
+      鼓力丸・旅行夥伴
+    </p>
+
+    <h2 style="margin:0 0 6px;font-size:19px;">
+      歡迎回來！
+    </h2>
+
+    <p style="margin:0;color:#667085;font-size:14px;line-height:1.6;">
+      今天一起前往東京，完成第一趟日文旅程吧！
+    </p>
+
+    <button
+      onclick="document.querySelector('.tabs').scrollIntoView({behavior:'smooth'})"
+      style="
+        margin-top:12px;
+        border:0;
+        border-radius:14px;
+        padding:11px 16px;
+        background:#e86a83;
+        color:#fff;
+        font-weight:800;
+      "
+    >
+      開始今天旅程
+    </button>
+  </div>
+</section>
     <section class="progress-card">
       <div>
         <span>今日進度</span>

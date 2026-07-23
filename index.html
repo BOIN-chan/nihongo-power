@@ -196,7 +196,30 @@ quiz:["「做到了」是？",["わかりません","できました","ありま
 
 const STORE={completed:"nihongoCompleted",favorites:"nihongoFavorites",streak:"nihongoStreak",last:"nihongoLastLearned"};
 let completed=JSON.parse(localStorage.getItem(STORE.completed)||"[]"),day=0,step=0,word=0,builderAnswer=[];
-const lessonDialog=document.getElementById("lessonDialog");
+
+const $=id=>document.getElementById(id);
+const lessonDialog=$("lessonDialog");
+const dayGrid=$("dayGrid");
+const progressText=$("progressText");
+const progressBar=$("progressBar");
+const welcome=$("welcome");
+const welcomeText=$("welcomeText");
+const dailyDay=$("dailyDay");
+const dailyJp=$("dailyJp");
+const dailyHira=$("dailyHira");
+const dailyKata=$("dailyKata");
+const dailyTw=$("dailyTw");
+const dailySpeak=$("dailySpeak");
+const dailyFavorite=$("dailyFavorite");
+const dailyLearned=$("dailyLearned");
+const streakText=$("streakText");
+const favoriteText=$("favoriteText");
+const lessonDay=$("lessonDay");
+const lessonTitle=$("lessonTitle");
+const tabs=$("tabs");
+const lessonBody=$("lessonBody");
+const nextBtn=$("nextBtn");
+
 const stepNames=["單字","句子","文法","造句","測驗","完成"];
 
 function dateKey(d=new Date()){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`}
@@ -261,55 +284,63 @@ function checkBuilder(){
  else{f.textContent="順序還不對，再試一次。";f.style.color="#d9534f"}
 }
 function changeWord(d){word=Math.max(0,Math.min(lessons[day].words.length-1,word+d));renderLesson()}
-function answer(i,el){const q=lessons[day].quiz,all=[...document.querySelectorAll(".option")];all.forEach(b=>b.disabled=true);if(i===q[2]){el.classList.add("correct");feedback.textContent="答對了！すごい！"}else{el.classList.add("wrong");all[q[2]].classList.add("correct");feedback.textContent="再記一次就會了！"}setTimeout(()=>{step=5;renderLesson()},900)}
+function answer(i,el){
+ const q=lessons[day].quiz;
+ const all=[...document.querySelectorAll(".option")];
+ const feedback=$("feedback");
+ all.forEach(b=>b.disabled=true);
+ if(i===q[2]){
+   el.classList.add("correct");
+   feedback.textContent="答對了！すごい！";
+ }else{
+   el.classList.add("wrong");
+   all[q[2]].classList.add("correct");
+   feedback.textContent="再記一次就會了！";
+ }
+ setTimeout(()=>{step=5;renderLesson()},900);
+}
 function nextStep(){if(step<5){step++;renderLesson()}}
 function prevStep(){if(step>0){step--;renderLesson()}else lessonDialog.close()}
 function finishDay(){if(!completed.includes(day)){completed.push(day);completed.sort((a,b)=>a-b);localStorage.setItem(STORE.completed,JSON.stringify(completed))}renderDays();lessonDialog.close()}
 let japaneseVoice=null;
 
 function loadJapaneseVoice(){
- const voices=window.speechSynthesis ? speechSynthesis.getVoices() : [];
+ if(!("speechSynthesis" in window)) return;
+ const voices=window.speechSynthesis.getVoices();
  japaneseVoice=
    voices.find(v=>v.lang==="ja-JP") ||
-   voices.find(v=>v.lang && v.lang.toLowerCase().startsWith("ja")) ||
+   voices.find(v=>String(v.lang).toLowerCase().startsWith("ja")) ||
    null;
 }
 
 if("speechSynthesis" in window){
  loadJapaneseVoice();
- speechSynthesis.onvoiceschanged=loadJapaneseVoice;
+ window.speechSynthesis.addEventListener?.("voiceschanged",loadJapaneseVoice);
+ window.speechSynthesis.onvoiceschanged=loadJapaneseVoice;
 }
 
-function speak(t){
+function speak(text){
  if(!("speechSynthesis" in window)){
-   alert("你的瀏覽器不支援語音播放，請改用 Chrome、Edge 或 Safari。");
+   alert("這台裝置不支援網頁語音，請改用 Chrome、Edge 或 Safari。");
    return;
  }
 
+ window.speechSynthesis.cancel();
  loadJapaneseVoice();
- speechSynthesis.cancel();
 
- const u=new SpeechSynthesisUtterance(t);
- u.lang="ja-JP";
- u.rate=.82;
- u.pitch=1;
- u.volume=1;
+ const utterance=new SpeechSynthesisUtterance(String(text));
+ utterance.lang="ja-JP";
+ utterance.rate=0.82;
+ utterance.pitch=1;
+ utterance.volume=1;
+ if(japaneseVoice) utterance.voice=japaneseVoice;
 
- if(japaneseVoice) u.voice=japaneseVoice;
+ utterance.onerror=()=>{
+   alert("日文語音播放失敗。請確認瀏覽器網站音效沒有被靜音，並在裝置中安裝日文語音。");
+ };
 
- setTimeout(()=>{
-   speechSynthesis.speak(u);
-   setTimeout(()=>{
-     if(!speechSynthesis.speaking && !speechSynthesis.pending){
-       alert("目前裝置沒有可用的日文語音。請在系統語言設定中安裝日文語音，或改用 Chrome / Edge 再試一次。");
-     }
-   },500);
- },100);
+ window.speechSynthesis.speak(utterance);
 }
-
-document.addEventListener("click",()=>{
- if("speechSynthesis" in window) loadJapaneseVoice();
-},{once:true});
 
 renderDaily();
 renderDays();

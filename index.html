@@ -265,7 +265,51 @@ function answer(i,el){const q=lessons[day].quiz,all=[...document.querySelectorAl
 function nextStep(){if(step<5){step++;renderLesson()}}
 function prevStep(){if(step>0){step--;renderLesson()}else lessonDialog.close()}
 function finishDay(){if(!completed.includes(day)){completed.push(day);completed.sort((a,b)=>a-b);localStorage.setItem(STORE.completed,JSON.stringify(completed))}renderDays();lessonDialog.close()}
-function speak(t){if(!("speechSynthesis" in window)){alert("你的瀏覽器不支援語音播放。");return}speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang="ja-JP";u.rate=.82;speechSynthesis.speak(u)}
+let japaneseVoice=null;
+
+function loadJapaneseVoice(){
+ const voices=window.speechSynthesis ? speechSynthesis.getVoices() : [];
+ japaneseVoice=
+   voices.find(v=>v.lang==="ja-JP") ||
+   voices.find(v=>v.lang && v.lang.toLowerCase().startsWith("ja")) ||
+   null;
+}
+
+if("speechSynthesis" in window){
+ loadJapaneseVoice();
+ speechSynthesis.onvoiceschanged=loadJapaneseVoice;
+}
+
+function speak(t){
+ if(!("speechSynthesis" in window)){
+   alert("你的瀏覽器不支援語音播放，請改用 Chrome、Edge 或 Safari。");
+   return;
+ }
+
+ loadJapaneseVoice();
+ speechSynthesis.cancel();
+
+ const u=new SpeechSynthesisUtterance(t);
+ u.lang="ja-JP";
+ u.rate=.82;
+ u.pitch=1;
+ u.volume=1;
+
+ if(japaneseVoice) u.voice=japaneseVoice;
+
+ setTimeout(()=>{
+   speechSynthesis.speak(u);
+   setTimeout(()=>{
+     if(!speechSynthesis.speaking && !speechSynthesis.pending){
+       alert("目前裝置沒有可用的日文語音。請在系統語言設定中安裝日文語音，或改用 Chrome / Edge 再試一次。");
+     }
+   },500);
+ },100);
+}
+
+document.addEventListener("click",()=>{
+ if("speechSynthesis" in window) loadJapaneseVoice();
+},{once:true});
 
 renderDaily();
 renderDays();
